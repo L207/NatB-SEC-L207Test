@@ -3,18 +3,26 @@
 import pyshark
 import json
 import data_store
+import numpy as np
 
 errstr_liveliness_changed = "DRIVER on_liveliness_changed"
 errstr_requested_deadline_missed = "DRIVER on_requested_deadline_missed"
 errstr_sample_lost = "DRIVER on_sample_lost"
 
 dumpallerrors = True
-numdepth = 10
+numdepth = 15
 
 prevtimestamp = [0.0] * numdepth
 prevtimestamprel = [0.0] * numdepth
 prevlen  = [0.0] * numdepth
 prevlencap =  [0.0] * numdepth
+
+#from wireshark, assuming this is correct for final - could always configure by config.json.
+IPlist = ["127.0.0.1",
+          "192.168.200.245",
+          "192.168.200.244",
+          "239.255.0.1"
+          ]
 
 # get inputs from rtps file, get expected output from label file
 # todo data MUST be flat (only a 1d list, not nested), can't do 'pkt.rtps' or 'pkt.DATA' as below
@@ -24,6 +32,7 @@ def get_inputs_and_outputs(filename):
     rtps_capture = pyshark.FileCapture(filename + ".RTPS.pcap")
     input_list = []
     _list = []
+    input_temp = []
     prev_pkt_sniff_time = float(rtps_capture[0].sniff_timestamp) #this is so first relative value always zero
     input_len = 0 #needed for generating the output array
     for pkt in rtps_capture:
@@ -37,16 +46,16 @@ def get_inputs_and_outputs(filename):
         input_len = input_len + 1
         #input_list.append([float(pkt.sniff_timestamp) - prev_pkt_sniff_time,
         #                   pkt.ip.src_host, pkt.ip.dst_host, pkt.rtps])
-        data_store.input_d.append([float(pkt.sniff_timestamp),
-                                    float(pkt.sniff_timestamp) - prev_pkt_sniff_time,
+        input_temp.append([#float(pkt.sniff_timestamp),
+                                    (float(pkt.sniff_timestamp) - prev_pkt_sniff_time)*10000,
                                     float(pkt.length)/1516,
                                     float(pkt.captured_length)/1516]
-                                  + prevtimestamp
+                                  #+ prevtimestamp
                                   + prevtimestamprel
                                   + prevlen
                                   + prevlencap)
 
-        prevtimestamp.insert(0, float(pkt.sniff_timestamp))
+        prevtimestamp.insert(0, float(pkt.sniff_timestamp)*10000)
         prevtimestamp.pop(numdepth)
         prevtimestamprel.insert(0, float(pkt.sniff_timestamp) - prev_pkt_sniff_time)
         prevtimestamprel.pop(numdepth)
@@ -62,6 +71,9 @@ def get_inputs_and_outputs(filename):
             print('.', end='')
     print("") #new line, as above loop doesn't make one.
     print("Input Array Length : " + str(input_len))
+    print("Converting Input to Numpy:")
+    data_store.input_d = np.array(input_temp)
+    print("Conversion Done")
 
     lbl_capture = pyshark.FileCapture(filename + ".LABEL.pcap")
     #temp output list is - [timestamp, liveliness_changed_error, requested_deadline_error, sample_lost_error]
@@ -84,21 +96,23 @@ def get_inputs_and_outputs(filename):
                     print("At time: " + pkt.sniff_timestamp + " : ", end='')
                     print(strtemp, end='')
                 if errstr_liveliness_changed in strtemp:
-                    temp_output_list.append([float(pkt.sniff_timestamp), 1, 0, 0])
+                    #temp_output_list.append([float(pkt.sniff_timestamp), 1, 0, 0])
+                    temp_output_list.append([float(pkt.sniff_timestamp), 0, 0, 0])#temporary version hiding error type
                 elif errstr_requested_deadline_missed in strtemp:
                     temp_output_list.append([float(pkt.sniff_timestamp), 0, 1, 0])
                 elif errstr_sample_lost in strtemp:
-                    temp_output_list.append([float(pkt.sniff_timestamp), 0, 0, 1])
+                    #temp_output_list.append([float(pkt.sniff_timestamp), 0, 0, 1])
+                    temp_output_list.append([float(pkt.sniff_timestamp), 0, 0, 0])  # temporary version hiding error type
                 else:
                     temp_output_list.append([float(pkt.sniff_timestamp), 0, 0, 0])
 
             #temp_output_list.append([pkt.sniff_timestamp, pkt.DATA])
 
     #setup the data_store.output as a inputlength x 4 2d array of zeroes
-    data_store.output_d = [[9, 9, 9, 9]] * input_len
+    output_temp = [[9, 9, 9, 9]] * input_len
 
-    print("input_d  len : " + str(len(data_store.input_d)))
-    print("output_d len : " + str(len(data_store.output_d)))
+    #print("input_d  len : " + str(len(data_store.input_d)))
+    #print("output_d len : " + str(len(data_store.output_d)))
 
     data_store.temp_array = temp_output_list
 
@@ -107,27 +121,27 @@ def get_inputs_and_outputs(filename):
     i_temp = 0 #position in the temp_output_list
     for i in range(0, input_len):
         if i_temp < len(temp_output_list):
-            if data_store.input_d[i][0] == temp_output_list[i_temp][0]:
-                print("= t: " + str(data_store.input_d[i][0]) + " i: " + str(i) +
+            if input_temp[i][0] == temp_output_list[i_temp][0]:
+                print("= t: " + str(input_temp[i][0]) + " i: " + str(i) +
                       " i_temp: " + str(i_temp) + " :: ",end="")
-                data_store.output_d[i][0] = 0
-                data_store.output_d[i][1] = temp_output_list[i_temp][1]
-                data_store.output_d[i][2] = temp_output_list[i_temp][2]
-                data_store.output_d[i][3] = temp_output_list[i_temp][3]
-                print(data_store.output_d[i])
+                output_temp[i][0] = 0
+                output_temp[i][1] = temp_output_list[i_temp][1]
+                output_temp[i][2] = temp_output_list[i_temp][2]
+                output_temp[i][3] = temp_output_list[i_temp][3]
+                print(output_temp[i])
                 i_temp = i_temp + 1
-            elif data_store.input_d[i][0] > temp_output_list[i_temp][0]:
-                print("> t: " + str(data_store.input_d[i-1][0]) + " i: " + str(i-1) +
+            elif input_temp[i][0] > temp_output_list[i_temp][0]:
+                print("> t: " + str(input_temp[i-1][0]) + " i: " + str(i-1) +
                       " i_temp: " + str(i_temp) + " :: ",end="")
-                data_store.output_d[(i-1)][0] = temp_output_list[i_temp][0] - data_store.input_d[i-1][0]
-                data_store.output_d[(i-1)][1] = temp_output_list[i_temp][1]
-                data_store.output_d[(i-1)][2] = temp_output_list[i_temp][2]
-                data_store.output_d[(i-1)][3] = temp_output_list[i_temp][3]
-                data_store.output_d[i] = [0,0,0,0]
-                print(data_store.output_d[i-1])
+                output_temp[(i-1)][0] = temp_output_list[i_temp][0] - input_temp[i-1][0]
+                output_temp[(i-1)][1] = temp_output_list[i_temp][1]
+                output_temp[(i-1)][2] = temp_output_list[i_temp][2]
+                output_temp[(i-1)][3] = temp_output_list[i_temp][3]
+                output_temp[i] = [0,0,0,0]
+                print(output_temp[i-1])
                 i_temp = i_temp + 1
             else:
-                data_store.output_d[i] = [0,0,0,0]
+                output_temp[i] = [0,0,0,0]
 
     #this should NOT be used- just here for testing at the moment. need to replace with
     #code for rewriting output list
@@ -136,9 +150,13 @@ def get_inputs_and_outputs(filename):
     #this function doesn't need a return, the data_store does this for us.
     #return input_list, temp_output_list
 
+    print("Converting Output to Numpy:")
+    data_store.output_d = np.array(output_temp)
+    print("Conversion Done")
+
 def get_next():
-    input_list  = data_store.input_d[data_store.i]
-    output_list = data_store.output_d[data_store.i]
+    input_list  = input_temp[data_store.i]
+    output_list = output_temp[data_store.i]
     data_store.i = data_store.i + 1
     return input_list, output_list
 
