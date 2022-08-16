@@ -1,0 +1,27 @@
+console outout:
+
+Starting Training Process
+Epoch 1/10
+210/210 - 3s - loss: 3035039713460224.0000 - accuracy: 0.2418 - 3s/epoch - 15ms/step
+Epoch 2/10
+210/210 - 1s - loss: 17420192317440.0000 - accuracy: 0.0921 - 1s/epoch - 6ms/step
+Epoch 3/10
+210/210 - 1s - loss: 9346319646720.0000 - accuracy: 0.0720 - 1s/epoch - 6ms/step
+Epoch 4/10
+210/210 - 1s - loss: 6638541471744.0000 - accuracy: 0.1461 - 1s/epoch - 6ms/step
+Epoch 5/10
+210/210 - 1s - loss: 3864779554816.0000 - accuracy: 0.0665 - 1s/epoch - 6ms/step
+Epoch 6/10
+210/210 - 1s - loss: 3783530643456.0000 - accuracy: 0.1058 - 1s/epoch - 6ms/step
+Epoch 7/10
+210/210 - 1s - loss: 3917292503040.0000 - accuracy: 0.0772 - 1s/epoch - 6ms/step
+Epoch 8/10
+210/210 - 1s - loss: 8229487116288.0000 - accuracy: 0.0104 - 1s/epoch - 6ms/step
+Epoch 9/10
+210/210 - 1s - loss: 4143535620096.0000 - accuracy: 0.0644 - 1s/epoch - 6ms/step
+Epoch 10/10
+210/210 - 1s - loss: 8871677526016.0000 - accuracy: 0.0511 - 1s/epoch - 6ms/step
+Training Step Complete
+210/210 [==============================] - 1s 5ms/step - loss: 4541806804992.0000 - accuracy: 0.0089
+Accuracy : 0.008943210355937481
+program complete.
