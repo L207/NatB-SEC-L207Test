@@ -12,17 +12,16 @@ errstr_sample_lost = "DRIVER on_sample_lost"
 dumpallerrors = True
 numdepth = 15
 
+#from wireshark, assuming this is correct for final - could always configure by config.json.
+IPlist = np.array([ "127.0.0.1",
+                    "192.168.200.245",
+                    "192.168.200.244",
+                    "239.255.0.1"])
+
 prevtimestamp = [0.0] * numdepth
 prevtimestamprel = [0.0] * numdepth
 prevlen  = [0.0] * numdepth
 prevlencap =  [0.0] * numdepth
-
-#from wireshark, assuming this is correct for final - could always configure by config.json.
-IPlist = ["127.0.0.1",
-          "192.168.200.245",
-          "192.168.200.244",
-          "239.255.0.1"
-          ]
 
 # get inputs from rtps file, get expected output from label file
 # todo data MUST be flat (only a 1d list, not nested), can't do 'pkt.rtps' or 'pkt.DATA' as below
@@ -35,6 +34,10 @@ def get_inputs_and_outputs(filename):
     input_temp = []
     prev_pkt_sniff_time = float(rtps_capture[0].sniff_timestamp) #this is so first relative value always zero
     input_len = 0 #needed for generating the output array
+
+    prevIPsrc = [0.0] * (numdepth * len(IPlist))
+    prevIPdst = [0.0] * (numdepth * len(IPlist))
+
     for pkt in rtps_capture:
         # extract pertinent data e.g. actual payload, from packet into input_list
         # do not exclude non-RTPS packets. These can give hints to failures about to occur.
@@ -44,16 +47,21 @@ def get_inputs_and_outputs(filename):
         #
         # /removed this line/ if pkt.highest_layer == "RTPS":
         input_len = input_len + 1
+
+        ip_temp_src = ((IPlist == pkt.ip.src) * 1.0).tolist()
+        ip_temp_dst = ((IPlist == pkt.ip.dst) * 1.0).tolist()
+
         #input_list.append([float(pkt.sniff_timestamp) - prev_pkt_sniff_time,
         #                   pkt.ip.src_host, pkt.ip.dst_host, pkt.rtps])
         input_temp.append([#float(pkt.sniff_timestamp),
                                     (float(pkt.sniff_timestamp) - prev_pkt_sniff_time)*10000,
                                     float(pkt.length)/1516,
-                                    float(pkt.captured_length)/1516]
+                                    float(pkt.captured_length)/1516] + ip_temp_src + ip_temp_dst
                                   #+ prevtimestamp
                                   + prevtimestamprel
                                   + prevlen
-                                  + prevlencap)
+                                  + prevlencap
+                                  + prevIPsrc + prevIPdst)
 
         prevtimestamp.insert(0, float(pkt.sniff_timestamp)*10000)
         prevtimestamp.pop(numdepth)
@@ -63,7 +71,10 @@ def get_inputs_and_outputs(filename):
         prevlen.pop(numdepth)
         prevlencap.insert(0, float(pkt.captured_length)/1516)
         prevlencap.pop(numdepth)
-
+        prevIPsrc = ip_temp_src + prevIPsrc
+        prevIPsrc = prevIPsrc[0:(numdepth * len(IPlist))]
+        prevIPdst = ip_temp_dst + prevIPdst
+        prevIPdst = prevIPdst[0:(numdepth * len(IPlist))]
         prev_pkt_sniff_time = float(pkt.sniff_timestamp)
 
         #make sure user is aware this hasn't crashed, because this is very slow

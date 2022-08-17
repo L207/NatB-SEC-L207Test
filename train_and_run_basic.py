@@ -28,9 +28,9 @@ model = tf.keras.Sequential([
 #              metrics=['accuracy'])
 
 model.compile(optimizer='adam',
-              loss=tf.keras.losses.MeanSquaredError(),
+              #loss=tf.keras.losses.MeanSquaredError(),
               #loss=tf.keras.losses.SparseCategoricalCrossentropy(),
-              #loss=tf.keras.losses.MeanAbsoluteError(),
+              loss=tf.keras.losses.MeanAbsoluteError(),
               metrics=['accuracy'])
 
 #model.train(data_store.input_d, data_store.output_d, epochs=10)
