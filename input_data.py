@@ -9,7 +9,7 @@ errstr_liveliness_changed = "DRIVER on_liveliness_changed"
 errstr_requested_deadline_missed = "DRIVER on_requested_deadline_missed"
 errstr_sample_lost = "DRIVER on_sample_lost"
 
-dumpallerrors = True
+dumpallerrors = False
 numdepth = 15
 
 #from wireshark, assuming this is correct for final - could always configure by config.json.
@@ -53,6 +53,7 @@ def get_inputs_and_outputs(filename):
 
         #input_list.append([float(pkt.sniff_timestamp) - prev_pkt_sniff_time,
         #                   pkt.ip.src_host, pkt.ip.dst_host, pkt.rtps])
+        data_store.input_d_timestamp.append(float(pkt.sniff_timestamp))
         input_temp.append([#float(pkt.sniff_timestamp),
                                     (float(pkt.sniff_timestamp) - prev_pkt_sniff_time)*10000,
                                     float(pkt.length)/1516,
@@ -80,6 +81,7 @@ def get_inputs_and_outputs(filename):
         #make sure user is aware this hasn't crashed, because this is very slow
         if input_len%200 == 0:
             print('.', end='')
+            #break
     print("") #new line, as above loop doesn't make one.
     print("Input Array Length : " + str(input_len))
     print("Converting Input to Numpy:")
@@ -107,20 +109,20 @@ def get_inputs_and_outputs(filename):
                     print("At time: " + pkt.sniff_timestamp + " : ", end='')
                     print(strtemp, end='')
                 if errstr_liveliness_changed in strtemp:
-                    #temp_output_list.append([float(pkt.sniff_timestamp), 1, 0, 0])
-                    temp_output_list.append([float(pkt.sniff_timestamp), 0, 0, 0])#temporary version hiding error type
+                    temp_output_list.append([float(pkt.sniff_timestamp), 1, 0, 0])
+                    #temp_output_list.append([float(pkt.sniff_timestamp), 0, 0, 0])#temporary version hiding error type
                 elif errstr_requested_deadline_missed in strtemp:
                     temp_output_list.append([float(pkt.sniff_timestamp), 0, 1, 0])
                 elif errstr_sample_lost in strtemp:
-                    #temp_output_list.append([float(pkt.sniff_timestamp), 0, 0, 1])
-                    temp_output_list.append([float(pkt.sniff_timestamp), 0, 0, 0])  # temporary version hiding error type
+                    temp_output_list.append([float(pkt.sniff_timestamp), 0, 0, 1])
+                    #temp_output_list.append([float(pkt.sniff_timestamp), 0, 0, 0])  # temporary version hiding error type
                 else:
                     temp_output_list.append([float(pkt.sniff_timestamp), 0, 0, 0])
 
             #temp_output_list.append([pkt.sniff_timestamp, pkt.DATA])
 
     #setup the data_store.output as a inputlength x 4 2d array of zeroes
-    output_temp = [[9, 9, 9, 9]] * input_len
+    output_temp = [[1, 0, 0, 0]] * input_len
 
     #print("input_d  len : " + str(len(data_store.input_d)))
     #print("output_d len : " + str(len(data_store.output_d)))
@@ -132,27 +134,30 @@ def get_inputs_and_outputs(filename):
     i_temp = 0 #position in the temp_output_list
     for i in range(0, input_len):
         if i_temp < len(temp_output_list):
-            if input_temp[i][0] == temp_output_list[i_temp][0]:
-                print("= t: " + str(input_temp[i][0]) + " i: " + str(i) +
-                      " i_temp: " + str(i_temp) + " :: ",end="")
+            if data_store.input_d_timestamp[i] == temp_output_list[i_temp][0]:
+                #print("= t: " + str(input_temp[i][0]) + " i: " + str(i) +
+                #      " i_temp: " + str(i_temp) + " :: ",end="")
                 output_temp[i][0] = 0
                 output_temp[i][1] = temp_output_list[i_temp][1]
                 output_temp[i][2] = temp_output_list[i_temp][2]
                 output_temp[i][3] = temp_output_list[i_temp][3]
                 print(output_temp[i])
                 i_temp = i_temp + 1
-            elif input_temp[i][0] > temp_output_list[i_temp][0]:
-                print("> t: " + str(input_temp[i-1][0]) + " i: " + str(i-1) +
-                      " i_temp: " + str(i_temp) + " :: ",end="")
-                output_temp[(i-1)][0] = temp_output_list[i_temp][0] - input_temp[i-1][0]
+            elif data_store.input_d_timestamp[i] > temp_output_list[i_temp][0]:
+                #print("> t: " + str(input_temp[i-1][0]) + " i: " + str(i-1) +
+                #      " i_temp: " + str(i_temp) + " :: ",end="")
+                #output_temp[(i-1)][0] = temp_output_list[i_temp][0] - input_temp[i-1][0]
+                output_temp[(i-1)][0] = 0
                 output_temp[(i-1)][1] = temp_output_list[i_temp][1]
                 output_temp[(i-1)][2] = temp_output_list[i_temp][2]
                 output_temp[(i-1)][3] = temp_output_list[i_temp][3]
-                output_temp[i] = [0,0,0,0]
+                #output_temp[i] = [0,0,0,0]
                 print(output_temp[i-1])
                 i_temp = i_temp + 1
             else:
-                output_temp[i] = [0,0,0,0]
+                output_temp[i] = [1,0,0,0]
+        else:
+            output_temp[i] = [1, 0, 0, 0]
 
     #this should NOT be used- just here for testing at the moment. need to replace with
     #code for rewriting output list
@@ -164,6 +169,8 @@ def get_inputs_and_outputs(filename):
     print("Converting Output to Numpy:")
     data_store.output_d = np.array(output_temp)
     print("Conversion Done")
+
+    rtps_capture.close()
 
 def get_next():
     input_list  = input_temp[data_store.i]

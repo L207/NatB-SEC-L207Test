@@ -9,9 +9,11 @@ def init():
     i = 0
 
     #Matrixes for storing all the input data
+    global input_d_timestamp
     global input_d
     global input_d_label
     input_d = np.array([])
+    input_d_timestamp = []
     input_d_label = []
     global output_d
     global output_d_label
