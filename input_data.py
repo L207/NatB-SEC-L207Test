@@ -122,7 +122,7 @@ def get_inputs_and_outputs(filename):
             #temp_output_list.append([pkt.sniff_timestamp, pkt.DATA])
 
     #setup the data_store.output as a inputlength x 4 2d array of zeroes
-    output_temp = [[1, 0, 0, 0]] * input_len
+    output_temp = [[1, 0]] * input_len
 
     #print("input_d  len : " + str(len(data_store.input_d)))
     #print("output_d len : " + str(len(data_store.output_d)))
@@ -134,30 +134,26 @@ def get_inputs_and_outputs(filename):
     i_temp = 0 #position in the temp_output_list
     for i in range(0, input_len):
         if i_temp < len(temp_output_list):
-            if data_store.input_d_timestamp[i] == temp_output_list[i_temp][0]:
-                #print("= t: " + str(input_temp[i][0]) + " i: " + str(i) +
-                #      " i_temp: " + str(i_temp) + " :: ",end="")
-                output_temp[i][0] = 0
-                output_temp[i][1] = temp_output_list[i_temp][1]
-                output_temp[i][2] = temp_output_list[i_temp][2]
-                output_temp[i][3] = temp_output_list[i_temp][3]
-                print(output_temp[i])
-                i_temp = i_temp + 1
-            elif data_store.input_d_timestamp[i] > temp_output_list[i_temp][0]:
-                #print("> t: " + str(input_temp[i-1][0]) + " i: " + str(i-1) +
-                #      " i_temp: " + str(i_temp) + " :: ",end="")
-                #output_temp[(i-1)][0] = temp_output_list[i_temp][0] - input_temp[i-1][0]
-                output_temp[(i-1)][0] = 0
-                output_temp[(i-1)][1] = temp_output_list[i_temp][1]
-                output_temp[(i-1)][2] = temp_output_list[i_temp][2]
-                output_temp[(i-1)][3] = temp_output_list[i_temp][3]
-                #output_temp[i] = [0,0,0,0]
-                print(output_temp[i-1])
+            if data_store.input_d_timestamp[i] > temp_output_list[i_temp][0]:
+                if temp_output_list[i_temp][2] == 1:
+                    #print("> t: " + str(input_temp[i-1][0]) + " i: " + str(i-1) +
+                    #      " i_temp: " + str(i_temp) + " :: ",end="")
+                    #output_temp[(i-1)][0] = temp_output_list[i_temp][0] - input_temp[i-1][0]
+                    output_temp[(i-1)][0] = 0
+                    #output_temp[(i-1)][1] = temp_output_list[i_temp][1]
+                    #output_temp[(i-1)][2] = temp_output_list[i_temp][2]
+                    #output_temp[(i-1)][3] = temp_output_list[i_temp][3]
+                    output_temp[(i - 1)][1] = 1
+                    output_temp[i] = [1,0]
+                    #output_temp[i] = [0,0,0,0]
+                    print(output_temp[i-1])
+                else:
+                    output_temp[i] = [1, 0]
                 i_temp = i_temp + 1
             else:
-                output_temp[i] = [1,0,0,0]
+                output_temp[i] = [1,0]
         else:
-            output_temp[i] = [1, 0, 0, 0]
+            output_temp[i] = [1, 0]
 
     #this should NOT be used- just here for testing at the moment. need to replace with
     #code for rewriting output list

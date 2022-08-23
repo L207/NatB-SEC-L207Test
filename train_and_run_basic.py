@@ -1,6 +1,9 @@
 # Execution Instructions
 # Set Parameters as follows:
-#
+# 1-4 category weights
+# 5   learning rate
+# 6   layer1 width
+# 7   loss type
 
 # TensorFlow and tf.keras
 import keras.optimizers
@@ -39,8 +42,8 @@ model = tf.keras.Sequential([
     tf.keras.layers.Dense(len(data_store.input_d[0])),
     tf.keras.layers.Dense(lay1w, activation='elu'),
     #tf.keras.layers.Dense(8, activation='sigmoid'),
-    #tf.keras.layers.Dense(8, activation='elu'),
     tf.keras.layers.Dropout(0.5),
+    tf.keras.layers.Dense(15, activation='elu'),
     #tf.keras.layers.Dense(8, activation='softmax'),
     #tf.keras.layers.Dense(len(data_store.output_d[0]), activation='softmax', use_bias=True, bias_initializer=output_bias)
     tf.keras.layers.Dense(len(data_store.output_d[0]), activation='softmax', use_bias=True)
@@ -76,14 +79,17 @@ model.compile(optimizer=opt, #optimizer='adam',
 #model.train(data_store.input_d, data_store.output_d, epochs=10)
 
 #cl_weight = {0: 0.5, 1: 0.001, 2: 2.0, 3: 0.001}
+#cl_weight = {0: cl_weightarr[0],
+#             1: cl_weightarr[1],
+#             2: cl_weightarr[2],
+#             3: cl_weightarr[3]}
 cl_weight = {0: cl_weightarr[0],
-             1: cl_weightarr[1],
-             2: cl_weightarr[2],
-             3: cl_weightarr[3]}
+             1: cl_weightarr[2]}
+
 
 print("Starting Training Process")
 #model.fit(data_store.input_d, data_store.output_d, verbose=2, epochs=30, validation_split=0.4)
-model.fit(data_store.input_d, data_store.output_d, verbose=2, epochs=60, validation_split=0.4, class_weight=cl_weight)
+model.fit(data_store.input_d, data_store.output_d, verbose=2, epochs=150, validation_split=0.4, class_weight=cl_weight)
 print("Training Step Complete")
 _, accuracy = model.evaluate(data_store.input_d, data_store.output_d)
 print("Accuracy : " + str(accuracy))
@@ -96,7 +102,7 @@ accstr = "{:.4f}".format(accuracy)
 
 np.savetxt((sys.path[0] + "\Out-" + accstr + "_" +
             sys.argv[1] + "-" + sys.argv[2] + "-" + sys.argv[3] + "-" + sys.argv[4] + "-" +
-            sys.argv[5] + "-" + sys.argv[6] + "-" + sys.argv[7] + ".csv"), wr_array)
+            sys.argv[5] + "-" + sys.argv[6] + "-" + sys.argv[7] + ".csv"), wr_array, fmt='%0.4f')
 
 print("program complete.")
 
