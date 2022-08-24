@@ -105,6 +105,8 @@ np.savetxt((sys.path[0] + "\Out-" + accstr + "_" +
             sys.argv[5] + "-" + sys.argv[6] + "-" + sys.argv[7] + ".csv"), wr_array, fmt='%0.4f')
 
 print("program complete.")
+model.save_weights("./modelsave.sec")
+print("saved model")
 
 exit()
 #use write and restore to get the trained model saved and restored for operation?
